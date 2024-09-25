@@ -1,0 +1,37 @@
+# Stage 1: Build the Go binary
+FROM golang:1.22-alpine AS build
+
+# Set environment variables for Go
+ENV GO111MODULE=on
+
+# Create a directory for the app
+WORKDIR /app
+
+# Copy go.mod and go.sum files to cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the application files
+COPY . .
+
+# Build the Go app
+RUN go build -o hotel_services .
+
+# Stage 2: Create the final lightweight image
+FROM alpine:latest
+
+# Set a working directory in the container
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=build /app/hotel_services .
+
+# Copy the .env file (make sure it is properly included)
+COPY .env .  
+# Ensure the `.env` file is in the build context and copied
+
+# Expose the necessary port (if the service runs on 8080)
+EXPOSE 9093
+
+# Run the application
+CMD ["./hotel_services"]
